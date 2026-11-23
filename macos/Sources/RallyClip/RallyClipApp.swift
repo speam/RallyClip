@@ -53,6 +53,15 @@ struct RallyClipApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     weak var model: AppModel?
     private var closingApproved = false
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        CompletionNotifications.shared.prepare()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        CompletionNotifications.shared.clearBadge()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     private func canQuit() -> Bool {
         if model?.busy == true {

@@ -193,6 +193,7 @@ final class ViewerModel: ObservableObject {
         do {
             let text = "start_time,end_time\n" + points.map { String(format: "%.3f,%.3f", $0.start, $0.end) }.joined(separator: "\n") + "\n"
             try text.write(to: url, atomically: true, encoding: .utf8); notice = "CSV saved"
+            CompletionNotifications.shared.post(title: "导出完成", body: url.lastPathComponent)
         } catch { self.error = error.localizedDescription }
     }
     func exportVideo(selectedOnly: Bool = false, individual: Bool = false) {
@@ -210,6 +211,7 @@ final class ViewerModel: ObservableObject {
         exportProgress = 0; exportLabel = "Exporting video"
         exportTask = Task {
             do {
+                let output: URL
                 if individual {
                     let staging = destination.appendingPathComponent(".rallyclip-\(UUID().uuidString)")
                     try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
@@ -221,16 +223,17 @@ final class ViewerModel: ObservableObject {
                         }
                     }
                     try Task.checkCancellation()
-                    let output = destination.appendingPathComponent("RallyClip points \(UUID().uuidString.prefix(8))")
+                    output = destination.appendingPathComponent("RallyClip points \(UUID().uuidString.prefix(8))")
                     try FileManager.default.moveItem(at: staging, to: output)
-                    NSWorkspace.shared.activateFileViewerSelecting([output])
                 } else {
                     try await exporter.export(sources: sources, points: chosen, to: destination) { [weak self] progress in
                         Task { @MainActor [weak self] in self?.exportProgress = progress }
                     }
-                    NSWorkspace.shared.activateFileViewerSelecting([destination])
+                    output = destination
                 }
                 notice = "Export complete"
+                CompletionNotifications.shared.post(title: "导出完成", body: output.lastPathComponent)
+                if NSApp.isActive { NSWorkspace.shared.activateFileViewerSelecting([output]) }
             } catch is CancellationError { notice = "Export cancelled" }
             catch { self.error = error.localizedDescription }
             exportProgress = nil; exportTask = nil

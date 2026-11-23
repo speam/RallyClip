@@ -77,6 +77,10 @@ final class AppModel: ObservableObject {
                     if status.status != "in_progress" {
                         jobID = nil
                         if status.status == "failed" { throw RallyError.message(status.error ?? "Analysis failed.") }
+                        if status.status == "completed" {
+                            let body = status.library_id == nil ? "“\(name)”未检测到回合。" : name
+                            CompletionNotifications.shared.post(title: "分析完成", body: body)
+                        }
                         try await reload()
                         if let item = status.library_id { navigate(to: item) }
                         else if status.status == "completed" { message = "Analysis finished. No points were detected." }
