@@ -1,4 +1,5 @@
 import AppKit
+import OSLog
 import UserNotifications
 
 @MainActor
@@ -6,8 +7,13 @@ final class CompletionNotifications: NSObject, UNUserNotificationCenterDelegate 
     static let shared = CompletionNotifications()
 
     private let center: UNUserNotificationCenter? = Bundle.main.bundleIdentifier == nil ? nil : .current()
+    private let logger = Logger(subsystem: "com.iroblesrazzaq.rallyclip", category: "CompletionNotifications")
     private var authorization: Task<Void, Never>?
     private var unreadCount = 0
+
+    var isForeground: Bool {
+        NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier
+    }
 
     func prepare() {
         guard let center, authorization == nil else { return }
@@ -18,9 +24,10 @@ final class CompletionNotifications: NSObject, UNUserNotificationCenterDelegate 
     }
 
     func post(title: String, body: String) {
-        if !NSApp.isActive {
+        if !isForeground {
             unreadCount += 1
             NSApp.dockTile.badgeLabel = String(unreadCount)
+            logger.notice("Dock completion badge: \(NSApp.dockTile.badgeLabel ?? "none", privacy: .public)")
         }
 
         guard let center else { return }
@@ -35,8 +42,10 @@ final class CompletionNotifications: NSObject, UNUserNotificationCenterDelegate 
     }
 
     func clearBadge() {
+        guard unreadCount > 0 else { return }
         unreadCount = 0
         NSApp.dockTile.badgeLabel = nil
+        logger.notice("Dock completion badge: \(NSApp.dockTile.badgeLabel ?? "none", privacy: .public)")
     }
 
     nonisolated func userNotificationCenter(

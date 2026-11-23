@@ -233,7 +233,7 @@ final class ViewerModel: ObservableObject {
                 }
                 notice = "Export complete"
                 CompletionNotifications.shared.post(title: "导出完成", body: output.lastPathComponent)
-                if NSApp.isActive { NSWorkspace.shared.activateFileViewerSelecting([output]) }
+                if CompletionNotifications.shared.isForeground { NSWorkspace.shared.activateFileViewerSelecting([output]) }
             } catch is CancellationError { notice = "Export cancelled" }
             catch { self.error = error.localizedDescription }
             exportProgress = nil; exportTask = nil
